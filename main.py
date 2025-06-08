@@ -1,5 +1,8 @@
 import streamlit as st
 import pydeck as pdk
+import pandas as pd
+import numpy as np
+import plotly.express as px
 from data_processing import raw_data
 
 st.set_page_config(page_title="Vulcano Dashboard", layout="wide")
@@ -85,6 +88,23 @@ with col2:
     st.bar_chart(vei_counts)
 
 with col3:
-    st.subheader("Eruption Counts by Category")
-    category_counts = raw_data["Eruption Category"].value_counts()
-    st.bar_chart(category_counts)
+    st.subheader("Eruption Counts by Category (Log Scale)")
+
+    counts = raw_data["Eruption Category"].value_counts()
+    log_counts = np.log(counts)
+
+    df_cat = pd.DataFrame({
+        "Category": counts.index,
+        "Count": counts.values,
+        "Log Count": log_counts.values
+    })
+
+    fig = px.bar(
+        df_cat,
+        x="Category",
+        y="Log Count",
+        hover_data={"Count": True, "Log Count": False},
+        labels={"Log Count": "Log Count", "Category": "Eruption Category"},
+        title="Eruption Counts by Category (Log Scale)"
+    )
+    st.plotly_chart(fig, use_container_width=True)
