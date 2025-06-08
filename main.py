@@ -13,6 +13,14 @@ max_year = int(raw_data["Start Year"].max())
 year_range = st.sidebar.slider("Year Range", min_year, max_year, (min_year, max_year))
 vei_options = st.sidebar.multiselect("VEI", sorted(raw_data["VEI"].dropna().unique()), default=sorted(raw_data["VEI"].dropna().unique()))
 
+with st.sidebar.expander("Term Explanation", expanded=False):
+    st.markdown("""
+    **VEI (Volcanic Explosivity Index):** A scale that measures the explosiveness of volcanic eruptions from 0 (non-explosive) to 8 (mega-colossal).  
+    **Eruption Category:** Classification of the eruption type or nature.  
+    **Evidence Method:** The method used to date or verify the eruption event.  
+    **Heatmap:** A visualization showing density of eruptions in geographic regions.  
+    """)
+
 filtered_df = raw_data[
     (raw_data["Start Year"] >= year_range[0]) &
     (raw_data["Start Year"] <= year_range[1]) &
@@ -20,7 +28,7 @@ filtered_df = raw_data[
 ]
 
 # Maps
-view_state = pdk.ViewState(latitude=0, longitude=0, zoom=1.5, pitch=0)
+view_state = pdk.ViewState(latitude=0, longitude=0, zoom=1.5, pitch=0, min_zoom=2)
 
 scatter_layer = pdk.Layer(
     "ScatterplotLayer",
@@ -68,7 +76,8 @@ col1, col2, col3 = st.columns(3)
 with col1:
     st.subheader("Eruption Counts by Year")
     year_counts = raw_data["Start Year"].value_counts().sort_index()
-    st.area_chart(year_counts)
+    year_counts = year_counts.loc[(year_counts.index >= year_range[0]) & (year_counts.index <= year_range[1])]
+    st.bar_chart(year_counts)
 
 with col2:
     st.subheader("Eruption Counts by VEI")
