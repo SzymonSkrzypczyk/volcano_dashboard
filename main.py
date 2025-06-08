@@ -1,6 +1,8 @@
 import streamlit as st
 from streamlit_folium import st_folium
 import pandas as pd
+import seaborn as sns
+from matplotlib import pyplot as plt
 import folium
 from folium.plugins import HeatMap
 from data_processing import raw_data
@@ -50,3 +52,22 @@ HeatMap(heat_data, radius=10, blur=15, max_zoom=4).add_to(m2)
 
 st_folium(m2, use_container_width=True, height=600)
 
+# other charts
+col1, col2, col3 = st.columns(3)
+
+with col1:
+    st.subheader("Eruption Counts by Year")
+    year_counts = filtered_df["Start Year"].value_counts().sort_index()
+    st.area_chart(year_counts)
+
+
+with col2:
+    st.subheader("Eruption Counts by VEI")
+    vei_counts = filtered_df["VEI"].value_counts().sort_index()
+    st.bar_chart(vei_counts)
+
+
+with col3:
+    st.subheader("Eruption Counts by Category")
+    category_counts = filtered_df["Eruption Category"].value_counts()
+    st.bar_chart(category_counts)
