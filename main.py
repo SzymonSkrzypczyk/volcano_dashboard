@@ -1,17 +1,12 @@
 import streamlit as st
-from streamlit_folium import st_folium
-import pandas as pd
-import seaborn as sns
-from matplotlib import pyplot as plt
-import folium
-from folium.plugins import HeatMap
+import pydeck as pdk
 from data_processing import raw_data
 
 st.set_page_config(page_title="Vulcano Dashboard", layout="wide")
 
 st.title("Vulcano Dashboard")
 
-# sidebar config
+# sidebar settings
 st.sidebar.header("Filter Eruptions")
 min_year = int(raw_data["Start Year"].min())
 max_year = int(raw_data["Start Year"].max())
@@ -24,50 +19,63 @@ filtered_df = raw_data[
     (raw_data["VEI"].isin(vei_options))
 ]
 
-# Map of eruptions
-m = folium.Map(location=[0, 0], zoom_start=3, tiles="CartoDB positron")
-for _, row in filtered_df.iterrows():
-    popup_text = f"""
-    <b>{row['Volcano Name']}</b><br>
-    <b>Eruption Date:</b> {row['Start Year']}<br>
-    <b>VEI:</b> {row['VEI']} {row['VEI Modifier'] if pd.notnull(row['VEI Modifier']) else ''}<br>
-    <b>Eruption Category:</b> {row['Eruption Category']}<br>
-    <b>Evidence Method:</b> {row['Evidence Method (dating)']}
-    """
-    folium.CircleMarker(
-        location=[row["Latitude"], row["Longitude"]],
-        radius=5,
-        color="red",
-        fill=True,
-        fill_color="orange",
-        popup=folium.Popup(popup_text, max_width=300)
-    ).add_to(m)
+# Maps
+view_state = pdk.ViewState(latitude=0, longitude=0, zoom=1.5, pitch=0)
 
-st_data = st_folium(m, use_container_width=True, height=600)
+scatter_layer = pdk.Layer(
+    "ScatterplotLayer",
+    data=filtered_df,
+    get_position='[Longitude, Latitude]',
+    get_color='[255, 100, 100, 160]',
+    get_radius=50000,
+    pickable=True,
+)
 
-# Heatmap of eruptions - all eruptions
-m2 = folium.Map(location=[0, 0], zoom_start=3, tiles="CartoDB dark_matter")
-heat_data = filtered_df[["Latitude", "Longitude"]].values.tolist()
-HeatMap(heat_data, radius=10, blur=15, max_zoom=4).add_to(m2)
+tooltip = {
+    "html": "<b>{Volcano Name}</b><br>"
+            "Year: {Start Year}<br>"
+            "VEI: {VEI}<br>"
+            "Category: {Eruption Category}<br>"
+            "Dating: {Evidence Method (dating)}",
+    "style": {"backgroundColor": "black", "color": "white"}
+}
 
-st_folium(m2, use_container_width=True, height=600)
+st.subheader("Volcano Locations")
+st.pydeck_chart(pdk.Deck(
+    layers=[scatter_layer],
+    initial_view_state=view_state,
+    tooltip=tooltip
+))
 
-# other charts
+heat_layer = pdk.Layer(
+    "HeatmapLayer",
+    data=filtered_df,
+    get_position='[Longitude, Latitude]',
+    aggregation='MEAN',
+    get_weight=1,
+    radiusPixels=60,
+)
+
+st.subheader("Eruption Heatmap")
+st.pydeck_chart(pdk.Deck(
+    layers=[heat_layer],
+    initial_view_state=view_state
+))
+
+# Charts
 col1, col2, col3 = st.columns(3)
 
 with col1:
     st.subheader("Eruption Counts by Year")
-    year_counts = filtered_df["Start Year"].value_counts().sort_index()
+    year_counts = raw_data["Start Year"].value_counts().sort_index()
     st.area_chart(year_counts)
-
 
 with col2:
     st.subheader("Eruption Counts by VEI")
-    vei_counts = filtered_df["VEI"].value_counts().sort_index()
+    vei_counts = raw_data["VEI"].value_counts().sort_index()
     st.bar_chart(vei_counts)
-
 
 with col3:
     st.subheader("Eruption Counts by Category")
-    category_counts = filtered_df["Eruption Category"].value_counts()
+    category_counts = raw_data["Eruption Category"].value_counts()
     st.bar_chart(category_counts)
