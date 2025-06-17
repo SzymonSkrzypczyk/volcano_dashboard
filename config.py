@@ -21,3 +21,9 @@ vei_colors = {
     "7.0": "#67000d",
     "8.0": "#3b0006",
 }
+
+category_colors = {
+    "Confirmed Eruption": "#2ca02c",
+    "Uncertain Eruption": "#ff7f0e",
+    "Discredited Eruption": "#d62728"
+}

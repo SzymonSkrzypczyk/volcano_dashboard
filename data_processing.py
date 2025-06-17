@@ -26,4 +26,4 @@ combined['Continent'] = combined["Country"].map(country_to_continent).fillna('Un
 
 if __name__ == '__main__':
     print(combined.head().columns)
-    print(combined['Continent'].unique())
+    print(combined['Eruption Category'].unique())

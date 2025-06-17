@@ -9,7 +9,7 @@ import json
 
 from country_continent_mapper import country_to_continent
 from data_processing import combined, COUNTRIES_DATA
-from config import continent_colors, min_number_of_eruptions_for_single_country, vei_colors
+from config import continent_colors, min_number_of_eruptions_for_single_country, vei_colors, category_colors
 
 st.set_page_config(page_title="Volcano Dashboard", layout="wide")
 st.title("🌋 Volcano Eruption Dashboard")
@@ -98,7 +98,16 @@ with col2:
         "Count": counts.values,
         "Log Count": log_counts.values
     })
-    fig = px.bar(df_cat, x="Category", y="Log Count", hover_data=["Count"], title="Log-Scaled Eruption Counts")
+    fig = px.bar(
+        df_cat,
+        x="Category",
+        y="Log Count",
+        hover_data=["Count"],
+        title="Log-Scaled Eruption Counts",
+        color="Category",
+        color_discrete_map=category_colors
+    )
+    fig.update_layout(showlegend=False)
     st.plotly_chart(fig, use_container_width=True)
 
 st.subheader("🏳️ Eruptions by Country")
