@@ -62,19 +62,19 @@ heat_layer = pdk.Layer(
 st.subheader("🔥 Eruption Heatmap")
 st.pydeck_chart(pdk.Deck(layers=[heat_layer], initial_view_state=view_state))
 
-col1, col2, col3 = st.columns(3)
+
+st.subheader("📆 Eruptions by Year")
+year_counts = filtered_df["Start Year"].value_counts().sort_index()
+st.bar_chart(year_counts)
+
+col1, col2 = st.columns(2)
 
 with col1:
-    st.subheader("📆 Eruptions by Year")
-    year_counts = filtered_df["Start Year"].value_counts().sort_index()
-    st.bar_chart(year_counts)
-
-with col2:
     st.subheader("🌋 Eruptions by VEI")
     vei_counts = filtered_df["VEI"].value_counts().sort_index()
     st.bar_chart(vei_counts)
 
-with col3:
+with col2:
     st.subheader("📊 Eruption Categories (Log Scale)")
     counts = filtered_df["Eruption Category"].value_counts()
     log_counts = np.log(counts)
@@ -90,6 +90,13 @@ st.subheader("🏳️ Eruptions by Country")
 
 country_counts = filtered_df["Country"].value_counts().reset_index()
 country_counts.columns = ["Country", "Eruption Count"]
+fig_bar = px.bar(country_counts, x="Country", y="Eruption Count", title="Eruptions per Country")
+st.plotly_chart(fig_bar, use_container_width=True)
+
+st.subheader("🏳️ Eruptions by Continent")
+
+country_counts = filtered_df["Continent"].value_counts().reset_index()
+country_counts.columns = ["Continent", "Eruption Count"]
 fig_bar = px.bar(country_counts, x="Country", y="Eruption Count", title="Eruptions per Country")
 st.plotly_chart(fig_bar, use_container_width=True)
 
