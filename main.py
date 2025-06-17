@@ -15,7 +15,7 @@ st.title("🌋 Volcano Eruption Dashboard")
 st.sidebar.header("🔍 Filter Eruptions")
 min_year = int(combined["Start Year"].min())
 max_year = int(combined["Start Year"].max())
-year_range = st.sidebar.slider("Year Range", min_year, max_year, (min_year, max_year))
+year_range = st.sidebar.slider("Year Range", min_year, max_year, (0, max_year))
 vei_options = st.sidebar.multiselect("VEI", sorted(combined["VEI"].dropna().unique()), default=sorted(combined["VEI"].dropna().unique()))
 
 with st.sidebar.expander("ℹ️ Term Explanation"):
