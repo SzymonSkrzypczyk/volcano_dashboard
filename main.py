@@ -6,7 +6,10 @@ from matplotlib.colors import Normalize, to_hex
 from matplotlib import cm
 import plotly.express as px
 import json
+
+from country_continent_mapper import country_to_continent
 from data_processing import combined, COUNTRIES_DATA
+from config import continent_colors, min_number_of_eruptions_for_single_country
 
 st.set_page_config(page_title="Volcano Dashboard", layout="wide")
 st.title("🌋 Volcano Eruption Dashboard")
@@ -16,7 +19,8 @@ st.sidebar.header("🔍 Filter Eruptions")
 min_year = int(combined["Start Year"].min())
 max_year = int(combined["Start Year"].max())
 year_range = st.sidebar.slider("Year Range", min_year, max_year, (0, max_year))
-vei_options = st.sidebar.multiselect("VEI", sorted(combined["VEI"].dropna().unique()), default=sorted(combined["VEI"].dropna().unique()))
+vei_options = st.sidebar.multiselect("VEI", sorted(combined["VEI"].dropna().unique()),
+                                     default=sorted(combined["VEI"].dropna().unique()))
 
 with st.sidebar.expander("ℹ️ Term Explanation"):
     st.markdown("""
@@ -62,7 +66,6 @@ heat_layer = pdk.Layer(
 st.subheader("🔥 Eruption Heatmap")
 st.pydeck_chart(pdk.Deck(layers=[heat_layer], initial_view_state=view_state))
 
-
 st.subheader("📆 Eruptions by Year")
 year_counts = filtered_df["Start Year"].value_counts().sort_index()
 st.bar_chart(year_counts)
@@ -90,15 +93,54 @@ st.subheader("🏳️ Eruptions by Country")
 
 country_counts = filtered_df["Country"].value_counts().reset_index()
 country_counts.columns = ["Country", "Eruption Count"]
-fig_bar = px.bar(country_counts, x="Country", y="Eruption Count", title="Eruptions per Country")
+
+country_counts = filtered_df["Country"].value_counts().reset_index()
+country_counts.columns = ["Country", "Eruption Count"]
+
+# 2. Dodaj kontynent korzystając ze słownika country_to_continent
+country_counts["Continent"] = country_counts["Country"].map(country_to_continent).fillna("Unknown")
+
+# 3. Filtruj kraje z > 10 erupcji (zmienna możesz dostosować)
+country_counts = country_counts[country_counts["Eruption Count"] > min_number_of_eruptions_for_single_country]
+
+# 4. Zdefiniuj paletę kolorów dla kontynentów (dopasuj do swoich potrzeb)
+
+fig_bar = px.bar(
+    country_counts,
+    x="Country",
+    y="Eruption Count",
+    color="Continent",
+    color_discrete_map=continent_colors,
+    title=f"Eruptions per Country ( more than {min_number_of_eruptions_for_single_country} eruptions )"
+)
+
+# 6. Wyświetlamy wykres w Streamlit
 st.plotly_chart(fig_bar, use_container_width=True)
 
-st.subheader("🏳️ Eruptions by Continent")
+st.subheader("🌍 Eruptions by Continent")
 
 country_counts = filtered_df["Continent"].value_counts().reset_index()
 country_counts.columns = ["Continent", "Eruption Count"]
-fig_bar = px.bar(country_counts, x="Country", y="Eruption Count", title="Eruptions per Country")
+fig_bar = px.bar(
+    country_counts,
+    x="Continent",
+    y="Eruption Count",
+    title="Eruptions per Country",
+    color="Continent",
+    color_discrete_map=continent_colors
+)
 st.plotly_chart(fig_bar, use_container_width=True)
+
+fig_pie = px.pie(
+    country_counts,
+    names="Continent",
+    values="Eruption Count",
+    title="Procentowy udział erupcji według kontynentu",
+    color="Continent",
+    color_discrete_map=continent_colors
+)
+
+st.plotly_chart(fig_pie, use_container_width=True)
 
 choropleth_df = filtered_df.groupby("ISO3").size().reset_index(name="Eruption Count")
 with COUNTRIES_DATA.open("r", encoding="utf-8") as f:
@@ -109,7 +151,6 @@ max_eruptions = max(eruption_dict.values())
 
 norm = Normalize(vmin=0, vmax=max_eruptions)
 cmap = cm.get_cmap("Oranges")
-
 
 for feature in geojson["features"]:
     iso = feature["properties"]["ISO3166-1-Alpha-3"]
