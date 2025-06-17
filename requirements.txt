@@ -5,3 +5,4 @@ plotly
 seaborn
 matplotlib
 pydeck
+geopandas
