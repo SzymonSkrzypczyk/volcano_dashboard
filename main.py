@@ -9,7 +9,7 @@ import json
 
 from country_continent_mapper import country_to_continent
 from data_processing import combined, COUNTRIES_DATA
-from config import continent_colors, min_number_of_eruptions_for_single_country
+from config import continent_colors, min_number_of_eruptions_for_single_country, vei_colors
 
 st.set_page_config(page_title="Volcano Dashboard", layout="wide")
 st.title("🌋 Volcano Eruption Dashboard")
@@ -74,8 +74,20 @@ col1, col2 = st.columns(2)
 
 with col1:
     st.subheader("🌋 Eruptions by VEI")
-    vei_counts = filtered_df["VEI"].value_counts().sort_index()
-    st.bar_chart(vei_counts)
+    vei_counts = filtered_df["VEI"].value_counts().sort_index().reset_index()
+    vei_counts.columns = ["VEI", "Count"]
+    vei_counts["VEI"] = vei_counts["VEI"].astype(str)
+
+    fig = px.bar(
+        vei_counts,
+        x="VEI",
+        y="Count",
+        title="Eruptions by VEI",
+        color="VEI",
+        color_discrete_map=vei_colors,
+    )
+
+    st.plotly_chart(fig, use_container_width=True)
 
 with col2:
     st.subheader("📊 Eruption Categories (Log Scale)")
