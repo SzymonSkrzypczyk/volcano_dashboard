@@ -1,0 +1,72 @@
+DASHBOARD ERUPCJI WULKANICZNYCH – WYJAŚNIENIA METOD I DECYZJI ANALITYCZNYCH
+
+1. Filtrowanie danych (zakres lat i VEI)
+--------------------------------------------------
+Cel: Umożliwienie użytkownikowi interaktywnego wyboru zakresu analizowanych erupcji.
+Metoda: Filtracja danych na podstawie roku rozpoczęcia erupcji (Start Year) oraz indeksu eksplozywności VEI (Volcanic Explosivity Index).
+
+2. Warstwa punktowa (ScatterplotLayer)
+--------------------------------------------------
+Cel: Wizualizacja lokalizacji każdej pojedynczej erupcji.
+Metoda: Współrzędne geograficzne (Longitude, Latitude) przedstawiane jako punkty na mapie za pomocą biblioteki PyDeck.
+
+3. Mapa cieplna erupcji (HeatmapLayer)
+--------------------------------------------------
+Cel: Identyfikacja obszarów o największej koncentracji aktywności wulkanicznej.
+Metoda: Tworzenie mapy cieplnej na podstawie gęstości wystąpień z użyciem radiusPixels i agregacji MEAN.
+
+4. Liczba erupcji w czasie (bar chart)
+--------------------------------------------------
+Cel: Analiza dynamiki erupcji na przestrzeni lat.
+Metoda: Grupowanie danych według kolumny Start Year i zliczanie wystąpień.
+
+5. Rozkład erupcji według VEI
+--------------------------------------------------
+Cel: Ocena częstości występowania erupcji w zależności od ich intensywności.
+Metoda: Zliczenie erupcji dla każdego poziomu VEI, prezentacja w formie wykresu słupkowego z kolorami przypisanymi do VEI.
+
+6. Kategorie erupcji (skala logarytmiczna)
+--------------------------------------------------
+Cel: Przedstawienie typów erupcji, przy jednoczesnym zminimalizowaniu dominacji liczebnych kategorii.
+Metoda: Obliczenie logarytmu naturalnego liczby erupcji dla każdej kategorii i przedstawienie w formie wykresu słupkowego.
+
+7. Erupcje według krajów
+--------------------------------------------------
+Cel: Porównanie intensywności aktywności wulkanicznej między państwami.
+Metoda:
+- Grupowanie danych po kolumnie Country.
+- Odfiltrowanie krajów z niską liczbą erupcji (progowe minimum określone w konfiguracji).
+- Przypisanie kontynentów za pomocą mapowania country_to_continent.
+- Wizualizacja w formie wykresu słupkowego z kolorami odpowiadającymi kontynentom.
+
+8. Erupcje według kontynentów
+--------------------------------------------------
+Cel: Pokazanie globalnego rozkładu erupcji w ujęciu kontynentalnym.
+Metoda: Grupowanie danych po kontynencie, a następnie przedstawienie liczby erupcji w formie wykresu słupkowego i wykresu kołowego (udziały procentowe).
+
+9. Mapa choropletyczna gęstości erupcji
+--------------------------------------------------
+Cel: Graficzne przedstawienie zagęszczenia erupcji na mapie świata.
+Metoda:
+- Grupowanie danych według kodu ISO3.
+- Przypisanie liczby erupcji do każdego kraju.
+- Normalizacja wartości i przekształcenie do skali kolorystycznej (Oranges).
+- Aktualizacja właściwości GeoJSON (fill_color) i wyświetlenie za pomocą GeoJsonLayer.
+
+10. Warstwy tektoniczne
+--------------------------------------------------
+Cel: Umieszczenie erupcji w kontekście geologicznym (granice płyt, orogeny, ryfty).
+Metoda:
+- Wczytanie danych wektorowych SHP z zestawu PB2002.
+- Konwersja układu współrzędnych do EPSG:4326.
+- Możliwość włączania/wyłączania warstw przez użytkownika (checkboxy).
+  * Granice ryftowe: linie oznaczające ryfty kontynentalne i oceaniczne.
+  * Płyty tektoniczne: kolorowe obszary płyt z granicami.
+  * Orogeny: obszary deformacji i gór fałdowych.
+
+11. Inne decyzje projektowe
+--------------------------------------------------
+- Zastosowano biblioteki: PyDeck (mapy 3D, szybsze niz mapy generowane przez Plotly), Plotly (interaktywne wykresy), GeoPandas (przetwarzanie danych SHP).
+- Kolorystyka kategorii (np. VEI, kontynentów) zdefiniowana w config.py.
+- Skala logarytmiczna używana w przypadku wykresów o silnie niesymetrycznym rozkładzie.
+- Użytkownik może w czasie rzeczywistym filtrować dane i przełączać warstwy.
