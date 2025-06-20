@@ -12,53 +12,54 @@ from country_continent_mapper import country_to_continent
 from data_processing import combined, COUNTRIES_DATA
 from config import continent_colors, min_number_of_eruptions_for_single_country, vei_colors, category_colors
 
-#loading rift files
 gdf_bound = gpd.read_file("data/tect/PB2002_boundaries.shp")
 gdf_orogens = gpd.read_file("data/tect/PB2002_orogens.shp")
 gdf_plates = gpd.read_file("data/tect/PB2002_plates.shp")
 
-gdf_plates.rename(columns={"PlateName": "Name"},inplace=True)
+gdf_plates.rename(columns={"PlateName": "name"}, inplace=True)
+gdf_orogens.rename(columns={"Name": "name"}, inplace=True)
+gdf_bound.rename(columns={"Name": "name"}, inplace=True)
 
-gdf_bound  = gdf_bound.to_crs(epsg=4326)
+gdf_bound1 = gdf_bound[gdf_bound['Type'] == 'subduction']
+gdf_bound2 = gdf_bound[gdf_bound['Type'].isna()]
+
+gdf_bound1 = gdf_bound1.to_crs(epsg=4326)
+gdf_bound2 = gdf_bound2.to_crs(epsg=4326)
 gdf_orogens = gdf_orogens.to_crs(epsg=4326)
 gdf_plates = gdf_plates.to_crs(epsg=4326)
-#to json
-rift_geojson = json.loads(gdf_bound.to_json())
+
+rift_geojson1 = json.loads(gdf_bound1.to_json())
+rift_geojson2 = json.loads(gdf_bound2.to_json())
 orogen_geojson = json.loads(gdf_orogens.to_json())
 plates_geojson = json.loads(gdf_plates.to_json())
 
-
-st.set_page_config(page_title="Volcano Dashboard", layout="wide")
-tab1, tab2 = st.tabs(["Main", "Rift zones"])
+st.set_page_config(page_title="Panel Wulkanów", layout="wide")
+tab1, tab2 = st.tabs(["Główna", "Strefy ryftowe"])
 
 with tab1:
-    st.title("🌋 Volcano Eruption Dashboard")
+    st.title("🌋 Panel Wybuchów Wulkanicznych")
 
-    # sidebar settings
-    st.sidebar.header("🔍 Filter Eruptions")
+    st.sidebar.header("🔍 Filtruj wybuchy")
     min_year = int(combined["Start Year"].min())
     max_year = int(combined["Start Year"].max())
-    year_range = st.sidebar.slider("Year Range", min_year, max_year, (0, max_year))
+    year_range = st.sidebar.slider("Zakres lat", min_year, max_year, (0, max_year))
     vei_options = st.sidebar.multiselect("VEI", sorted(combined["VEI"].dropna().unique()),
                                         default=sorted(combined["VEI"].dropna().unique()))
 
-    with st.sidebar.expander("ℹ️ Term Explanation"):
+    with st.sidebar.expander("ℹ️ Wyjaśnienie terminów"):
         st.markdown("""
-        **VEI (Volcanic Explosivity Index):** Scale from 0 (non-explosive) to 8 (mega-colossal).  
-        **Eruption Category:** Type of eruption.  
-        **Evidence Method:** How eruption was dated.  
+        **VEI (Wulkaniczny Indeks Eksplozji):** Skala od 0 (nieeksplozyjny) do 8 (mega-kolosalny).  
+        **Kategoria wybuchu:** Typ erupcji.  
+        **Metoda dowodu:** Sposób datowania erupcji.  
         """)
 
     filtered_df = combined[
         (combined["Start Year"] >= year_range[0]) &
         (combined["Start Year"] <= year_range[1]) &
         (combined["VEI"].isin(vei_options))
-        ]
+    ]
 
     view_state = pdk.ViewState(latitude=0, longitude=0, zoom=1.5, pitch=0)
-
-    
-
 
     scatter_layer = pdk.Layer(
         "ScatterplotLayer",
@@ -70,11 +71,11 @@ with tab1:
     )
 
     tooltip = {
-        "html": "<b>{Volcano Name}</b><br>Year: {Start Year}<br>VEI: {VEI}<br>Country: {Country}<br>Category: {Eruption Category}",
+        "html": "<b>{Volcano Name}</b><br>Rok: {Start Year}<br>VEI: {VEI}<br>Kraj: {Country}<br>Kategoria: {Eruption Category}",
         "style": {"backgroundColor": "black", "color": "white"}
     }
 
-    st.subheader("🗺️ Volcano Locations")
+    st.subheader("🗺️ Lokalizacje wulkanów")
     st.pydeck_chart(pdk.Deck(layers=[scatter_layer], initial_view_state=view_state, tooltip=tooltip))
 
     heat_layer = pdk.Layer(
@@ -86,26 +87,26 @@ with tab1:
         radiusPixels=60,
     )
 
-    st.subheader("🔥 Eruption Heatmap")
+    st.subheader("🔥 Mapa gęstości wybuchów")
     st.pydeck_chart(pdk.Deck(layers=[heat_layer], initial_view_state=view_state))
 
-    st.subheader("📆 Eruptions by Year")
+    st.subheader("📆 Wybuchy według lat")
     year_counts = filtered_df["Start Year"].value_counts().sort_index()
     st.bar_chart(year_counts)
 
     col1, col2 = st.columns(2)
 
     with col1:
-        st.subheader("🌋 Eruptions by VEI")
+        st.subheader("🌋 Wybuchy według VEI")
         vei_counts = filtered_df["VEI"].value_counts().sort_index().reset_index()
-        vei_counts.columns = ["VEI", "Count"]
+        vei_counts.columns = ["VEI", "Liczba"]
         vei_counts["VEI"] = vei_counts["VEI"].astype(str)
 
         fig = px.bar(
             vei_counts,
             x="VEI",
-            y="Count",
-            title="Eruptions by VEI",
+            y="Liczba",
+            title="Wybuchy według VEI",
             color="VEI",
             color_discrete_map=vei_colors,
         )
@@ -113,85 +114,76 @@ with tab1:
         st.plotly_chart(fig, use_container_width=True)
 
     with col2:
-        st.subheader("📊 Eruption Categories (Log Scale)")
+        st.subheader("📊 Kategorie wybuchów (skala logarytmiczna)")
         counts = filtered_df["Eruption Category"].value_counts()
         log_counts = np.log(counts)
         df_cat = pd.DataFrame({
             "Category": counts.index,
-            "Count": counts.values,
+            "Liczba": counts.values,
             "Log Count": log_counts.values
         })
         fig = px.bar(
             df_cat,
             x="Category",
             y="Log Count",
-            hover_data=["Count"],
-            title="Log-Scaled Eruption Counts",
+            hover_data=["Liczba"],
+            title="Liczba wybuchów (skala logarytmiczna)",
             color="Category",
             color_discrete_map=category_colors
         )
         fig.update_layout(showlegend=False)
         st.plotly_chart(fig, use_container_width=True)
 
-    st.subheader("🏳️ Eruptions by Country")
+    st.subheader("🏳️ Wybuchy według krajów")
 
     country_counts = filtered_df["Country"].value_counts().reset_index()
-    country_counts.columns = ["Country", "Eruption Count"]
+    country_counts.columns = ["Country", "Liczba wybuchów"]
 
-    country_counts = filtered_df["Country"].value_counts().reset_index()
-    country_counts.columns = ["Country", "Eruption Count"]
-
-    # 2. Dodaj kontynent korzystając ze słownika country_to_continent
-    country_counts["Continent"] = country_counts["Country"].map(country_to_continent).fillna("Unknown")
-
-    # 3. Filtruj kraje z > 10 erupcji (zmienna możesz dostosować)
-    country_counts = country_counts[country_counts["Eruption Count"] > min_number_of_eruptions_for_single_country]
-
-    # 4. Zdefiniuj paletę kolorów dla kontynentów (dopasuj do swoich potrzeb)
+    country_counts["Continent"] = country_counts["Country"].map(country_to_continent).fillna("Nieznany")
+    country_counts = country_counts[country_counts["Liczba wybuchów"] > min_number_of_eruptions_for_single_country]
 
     fig_bar = px.bar(
         country_counts,
         x="Country",
-        y="Eruption Count",
+        y="Liczba wybuchów",
         color="Continent",
         color_discrete_map=continent_colors,
-        title=f"Eruptions per Country ( more than {min_number_of_eruptions_for_single_country} eruptions )"
+        title=f"Wybuchy według krajów (więcej niż {min_number_of_eruptions_for_single_country} wybuchów)"
     )
 
-    # 6. Wyświetlamy wykres w Streamlit
     st.plotly_chart(fig_bar, use_container_width=True)
 
-    st.subheader("🌍 Eruptions by Continent")
+    st.subheader("🌍 Wybuchy według kontynentów")
 
-    country_counts = filtered_df["Continent"].value_counts().reset_index()
-    country_counts.columns = ["Continent", "Eruption Count"]
+    continent_counts = filtered_df["Continent"].value_counts().reset_index()
+    continent_counts.columns = ["Continent", "Liczba wybuchów"]
     fig_bar = px.bar(
-        country_counts,
+        continent_counts,
         x="Continent",
-        y="Eruption Count",
-        title="Eruptions per Country",
+        y="Liczba wybuchów",
+        title="Wybuchy według kontynentów",
         color="Continent",
         color_discrete_map=continent_colors
     )
     st.plotly_chart(fig_bar, use_container_width=True)
 
     fig_pie = px.pie(
-        country_counts,
+        continent_counts,
         names="Continent",
-        values="Eruption Count",
-        title="Procentowy udział erupcji według kontynentu",
+        values="Liczba wybuchów",
+        title="Procentowy udział wybuchów według kontynentu",
         color="Continent",
         color_discrete_map=continent_colors
     )
 
     st.plotly_chart(fig_pie, use_container_width=True)
 
-    choropleth_df = filtered_df.groupby("ISO3").size().reset_index(name="Eruption Count")
+    choropleth_df = filtered_df.groupby("ISO3").size().reset_index(name="Liczba wybuchów")
     with COUNTRIES_DATA.open("r", encoding="utf-8") as f:
         geojson = json.load(f)
 
-    eruption_dict = dict(zip(choropleth_df["ISO3"], choropleth_df["Eruption Count"]))
-    max_eruptions = max(eruption_dict.values())
+    eruption_dict = dict(zip(choropleth_df["ISO3"], choropleth_df["Liczba wybuchów"]))
+    max_eruptions = max(eruption_dict.values()) if eruption_dict else 1
 
     norm = Normalize(vmin=0, vmax=max_eruptions)
     cmap = cm.get_cmap("Oranges")
@@ -200,7 +192,6 @@ with tab1:
         iso = feature["properties"]["ISO3166-1-Alpha-3"]
         eruptions = eruption_dict.get(iso, 0)
         color_rgba = cmap(norm(eruptions))
-        color_hex = to_hex(color_rgba)
         feature["properties"]["eruption_count"] = eruptions
         feature["properties"]["fill_color"] = list((int(c * 255) for c in color_rgba[:3]))
 
@@ -216,14 +207,12 @@ with tab1:
         auto_highlight=True,
     )
 
-    view_state = pdk.ViewState(latitude=0, longitude=0, zoom=1.5, pitch=0)
-
     tooltip = {
-        "html": "<b>{name}</b><br>Eruptions: {eruption_count}",
+        "html": "<b>{name}</b><br>Liczba wybuchów: {eruption_count}",
         "style": {"backgroundColor": "black", "color": "white"}
     }
 
-    st.subheader("🗺️ Eruption Density by Country")
+    st.subheader("🗺️ Gęstość wybuchów według krajów")
     st.pydeck_chart(pdk.Deck(
         layers=[geo_layer],
         initial_view_state=view_state,
@@ -231,61 +220,88 @@ with tab1:
     ))
 
 with tab2:
+    st.subheader("Wybuchy wulkaniczne w kontekście stref ryftowych")
     col1, col2, col3 = st.columns(3)
-    st.sidebar.header("Toggle Tectonic Layers")
+    st.sidebar.header("Włącz warstwy tektoniczne")
     with col1:
-        show_rift = st.checkbox("Show Rift Zones Boundaries", value=True)
+        show_rift = st.checkbox("Pokaż granice płyt tektonicznych", value=True)
     with col3:
-        show_orogen = st.checkbox("Show Orogens", value=False)
+        show_orogen = st.checkbox("Pokaż orogeny", value=False)
     with col2:
-        show_plates = st.checkbox("Show Rift Zones", value=False)
+        show_plates = st.checkbox("Pokaż płyty tektoniczne", value=False)
 
     layers = [scatter_layer]
-    
+
     if show_rift:
-        rift_layer = pdk.Layer(
-        "GeoJsonLayer",
-        rift_geojson,
-        pickable=True,
-        stroked=True,
-        filled=False,
-        get_line_color=[100, 200, 100],  
-        line_width_min_pixels=3,
-        auto_highlight=True,
+        rift_layer1 = pdk.Layer(
+            "GeoJsonLayer",
+            rift_geojson1,
+            pickable=True,
+            stroked=True,
+            filled=False,
+            get_line_color=[100, 200, 100],
+            line_width_min_pixels=3,
+            auto_highlight=True,
         )
-        layers.append(rift_layer)
-    
+        rift_layer2 = pdk.Layer(
+            "GeoJsonLayer",
+            rift_geojson2,
+            pickable=True,
+            stroked=True,
+            filled=False,
+            get_line_color=[100, 100, 200],
+            line_width_min_pixels=3,
+            auto_highlight=True,
+        )
+        layers.append(rift_layer1)
+        layers.append(rift_layer2)
 
     if show_plates:
         plates_layer = pdk.Layer(
-        "GeoJsonLayer",
-        plates_geojson,
-        pickable=True,
-        stroked=True,
-        filled=True,
-        get_fill_color=[100, 200, 100, 30],  
-        get_stroke_color=[100,100,100],
-        line_width_min_pixels=1,
-        auto_highlight=True,
+            "GeoJsonLayer",
+            plates_geojson,
+            pickable=True,
+            stroked=True,
+            filled=True,
+            get_fill_color=[100, 200, 100, 30],
+            get_stroke_color=[100, 100, 100],
+            line_width_min_pixels=1,
+            auto_highlight=True,
         )
         layers.append(plates_layer)
 
     if show_orogen:
         orogen_layer = pdk.Layer(
-        "GeoJsonLayer",
-        orogen_geojson,
-        pickable=True,
-        stroked=False,
-        filled=True,
-        get_fill_color=[200, 100, 200, 70],  
-        line_width_min_pixels=3,
-        auto_highlight=True,
+            "GeoJsonLayer",
+            orogen_geojson,
+            pickable=True,
+            stroked=False,
+            filled=True,
+            get_fill_color=[200, 100, 200, 70],
+            line_width_min_pixels=3,
+            auto_highlight=True,
         )
         layers.append(orogen_layer)
 
     tooltip2 = {
-        "html": "<b>{Name}</b><br>",
+        "html": "<b>{name}</b><br>",
         "style": {"backgroundColor": "black", "color": "white"}
     }
 
-    st.pydeck_chart(pdk.Deck(layers=[layers], initial_view_state=view_state, tooltip=tooltip2))
+    st.pydeck_chart(pdk.Deck(layers=layers, initial_view_state=view_state, tooltip=tooltip2))
+
+    st.markdown("""
+    ### Wulkany i strefy ryftowe
+
+    #### Czym jest ryft?
+    Ryft to miejsce, gdzie skorupa ziemska jest rozciągana, tworząc szczelinę (zwykle na skutek konwekcji).  
+    Gorący materiał (np. magma) z wnętrza Ziemi wypływa przez tę szczelinę, ochładza się i tworzy wulkan.
+
+    #### Subdukcja
+    Subdukcja to proces powstający wskutek ruchu płyt tektonicznych wywołanego rozciąganiem litosfery.  
+    Gdy płyty oceaniczne i kontynentalne się zderzają, płyta kontynentalna unosi się, a oceaniczna zanurza pod nią.  
+    Zanurzona płyta topnieje, a uwolniona woda obniża temperaturę topnienia skał, co sprzyja powstawaniu wulkanów.  
+    Wulkany powstałe przez subdukcję zwykle nie leżą dokładnie na granicy subdukcji, lecz nieco na boku.
+
+    Na mapie strefy ryftowe oznaczono kolorem niebieskim, a subdukcję zielonym.
+    """)
