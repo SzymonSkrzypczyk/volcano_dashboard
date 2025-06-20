@@ -19,7 +19,7 @@ Interaktywny dashboard analizujący dane o erupcjach wulkanów na przestrzeni dz
 ## Jak odpalić
 1. **Klonowanie repo(póki co nie jest publiczne ;))**:
 ```bash
-git clone https://github.com/twoja-nazwa/volcano-dashboard.git
+git clone git@github.com:SzymonSkrzypczyk/volcano_dashboard.git
 cd volcano-dashboard
 ```
 2. **Tworzenie środowiska wirtualnego**:
