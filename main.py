@@ -33,20 +33,20 @@ rift_geojson2 = json.loads(gdf_bound2.to_json())
 orogen_geojson = json.loads(gdf_orogens.to_json())
 plates_geojson = json.loads(gdf_plates.to_json())
 
-st.set_page_config(page_title="Panel Wulkanów", layout="wide")
+st.set_page_config(page_title="Dashboard Wybuchów Wulkanicznych", layout="wide")
 tab1, tab2 = st.tabs(["Główna", "Strefy ryftowe"])
 
 with tab1:
-    st.title("🌋 Panel Wybuchów Wulkanicznych")
+    st.title("Dashboard Wybuchów Wulkanicznych")
 
-    st.sidebar.header("🔍 Filtruj wybuchy")
+    st.sidebar.header("Filtruj wybuchy")
     min_year = int(combined["Start Year"].min())
     max_year = int(combined["Start Year"].max())
     year_range = st.sidebar.slider("Zakres lat", min_year, max_year, (0, max_year))
     vei_options = st.sidebar.multiselect("VEI", sorted(combined["VEI"].dropna().unique()),
                                         default=sorted(combined["VEI"].dropna().unique()))
 
-    with st.sidebar.expander("ℹ️ Wyjaśnienie terminów"):
+    with st.sidebar.expander("ℹWyjaśnienie terminów"):
         st.markdown("""
         **VEI (Wulkaniczny Indeks Eksplozji):** Skala od 0 (nieeksplozyjny) do 8 (mega-kolosalny).  
         **Kategoria wybuchu:** Typ erupcji.  
@@ -75,7 +75,7 @@ with tab1:
         "style": {"backgroundColor": "black", "color": "white"}
     }
 
-    st.subheader("🗺️ Lokalizacje wulkanów")
+    st.subheader("Lokalizacje wulkanów")
     st.pydeck_chart(pdk.Deck(layers=[scatter_layer], initial_view_state=view_state, tooltip=tooltip))
 
     heat_layer = pdk.Layer(
@@ -87,7 +87,7 @@ with tab1:
         radiusPixels=60,
     )
 
-    st.subheader("🔥 Mapa gęstości wybuchów")
+    st.subheader("Mapa gęstości wybuchów")
     st.pydeck_chart(pdk.Deck(layers=[heat_layer], initial_view_state=view_state))
 
     st.subheader("📆 Wybuchy według lat")
@@ -97,7 +97,7 @@ with tab1:
     col1, col2 = st.columns(2)
 
     with col1:
-        st.subheader("🌋 Wybuchy według VEI")
+        st.subheader("Wybuchy według VEI")
         vei_counts = filtered_df["VEI"].value_counts().sort_index().reset_index()
         vei_counts.columns = ["VEI", "Liczba"]
         vei_counts["VEI"] = vei_counts["VEI"].astype(str)
@@ -114,7 +114,7 @@ with tab1:
         st.plotly_chart(fig, use_container_width=True)
 
     with col2:
-        st.subheader("📊 Kategorie wybuchów (skala logarytmiczna)")
+        st.subheader("Kategorie wybuchów (skala logarytmiczna)")
         counts = filtered_df["Eruption Category"].value_counts()
         log_counts = np.log(counts)
         df_cat = pd.DataFrame({
@@ -134,7 +134,7 @@ with tab1:
         fig.update_layout(showlegend=False)
         st.plotly_chart(fig, use_container_width=True)
 
-    st.subheader("🏳️ Wybuchy według krajów")
+    st.subheader("Wybuchy według krajów")
 
     country_counts = filtered_df["Country"].value_counts().reset_index()
     country_counts.columns = ["Country", "Liczba wybuchów"]
@@ -153,7 +153,7 @@ with tab1:
 
     st.plotly_chart(fig_bar, use_container_width=True)
 
-    st.subheader("🌍 Wybuchy według kontynentów")
+    st.subheader("Wybuchy według kontynentów")
 
     continent_counts = filtered_df["Continent"].value_counts().reset_index()
     continent_counts.columns = ["Continent", "Liczba wybuchów"]
@@ -212,7 +212,7 @@ with tab1:
         "style": {"backgroundColor": "black", "color": "white"}
     }
 
-    st.subheader("🗺️ Gęstość wybuchów według krajów")
+    st.subheader("Gęstość wybuchów według krajów")
     st.pydeck_chart(pdk.Deck(
         layers=[geo_layer],
         initial_view_state=view_state,
