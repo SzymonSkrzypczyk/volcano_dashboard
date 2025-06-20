@@ -17,13 +17,20 @@ gdf_bound = gpd.read_file("data/tect/PB2002_boundaries.shp")
 gdf_orogens = gpd.read_file("data/tect/PB2002_orogens.shp")
 gdf_plates = gpd.read_file("data/tect/PB2002_plates.shp")
 
-gdf_plates.rename(columns={"PlateName": "Name"},inplace=True)
+gdf_plates.rename(columns={"PlateName": "name"},inplace=True)
+gdf_orogens.rename(columns={"Name": "name"},inplace=True)
+gdf_bound.rename(columns={"Name": "name"},inplace=True)
 
-gdf_bound  = gdf_bound.to_crs(epsg=4326)
+gdf_bound1 = gdf_bound[gdf_bound['Type'] == 'subduction']
+gdf_bound2 = gdf_bound[gdf_bound['Type'].isna()]
+
+gdf_bound1  = gdf_bound1.to_crs(epsg=4326)
+gdf_bound2  = gdf_bound2.to_crs(epsg=4326)
 gdf_orogens = gdf_orogens.to_crs(epsg=4326)
 gdf_plates = gdf_plates.to_crs(epsg=4326)
 #to json
-rift_geojson = json.loads(gdf_bound.to_json())
+rift_geojson1 = json.loads(gdf_bound1.to_json())
+rift_geojson2 = json.loads(gdf_bound2.to_json())
 orogen_geojson = json.loads(gdf_orogens.to_json())
 plates_geojson = json.loads(gdf_plates.to_json())
 
@@ -231,21 +238,22 @@ with tab1:
     ))
 
 with tab2:
+    st.subheader("Vulcanic Eruptions in the Context of Rift Zones")
     col1, col2, col3 = st.columns(3)
     st.sidebar.header("Toggle Tectonic Layers")
     with col1:
-        show_rift = st.checkbox("Show Rift Zones Boundaries", value=True)
+        show_rift = st.checkbox("Show Tectonic Plate Boundaries", value=True)
     with col3:
         show_orogen = st.checkbox("Show Orogens", value=False)
     with col2:
-        show_plates = st.checkbox("Show Rift Zones", value=False)
+        show_plates = st.checkbox("Show Tectonic Plates", value=False)
 
     layers = [scatter_layer]
     
     if show_rift:
-        rift_layer = pdk.Layer(
+        rift_layer1 = pdk.Layer(
         "GeoJsonLayer",
-        rift_geojson,
+        rift_geojson1,
         pickable=True,
         stroked=True,
         filled=False,
@@ -253,7 +261,18 @@ with tab2:
         line_width_min_pixels=3,
         auto_highlight=True,
         )
-        layers.append(rift_layer)
+        rift_layer2 = pdk.Layer(
+        "GeoJsonLayer",
+        rift_geojson2,
+        pickable=True,
+        stroked=True,
+        filled=False,
+        get_line_color=[100, 100, 200],  
+        line_width_min_pixels=3,
+        auto_highlight=True,
+        )
+        layers.append(rift_layer1)
+        layers.append(rift_layer2)
     
 
     if show_plates:
@@ -284,8 +303,24 @@ with tab2:
         layers.append(orogen_layer)
 
     tooltip2 = {
-        "html": "<b>{Name}</b><br>",
+        "html": "<b>{name}</b><br>",
         "style": {"backgroundColor": "black", "color": "white"}
     }
 
     st.pydeck_chart(pdk.Deck(layers=[layers], initial_view_state=view_state, tooltip=tooltip2))
+
+    st.markdown("""
+    ### Volcanoes and Rift Zones
+
+    #### What is a Rift?
+    A rift is often assiociated with formation of volanoes. It is a place where litosphere is pulled apart creating a gap (usually by convection). 
+    Later, convection pushes the hot material (such as magma) from inside the Earth. When material reaches surface, it cools down and creates volcano.
+
+    #### Subduction
+    Subduction is a result of tectonic plate movement caused by rifting. When litosphere is pulled apart in one area, tectonic plates move and often collide with other plates. 
+    When an oceanic plate and a continental plate meet, continental one goes up and the oceanic goes down due to difference in density. 
+    Bottom plate is pushed down and melts due to the heat. Then the water that was trapped in that plate decreases heat needed to melt surrounding rocks. 
+    This proces creates conditions favorable for the formation of vulcanoes. Subduction created vulcanoes are typically offset to subduction zone.
+
+    On the map rift zones are blue and subduction zones are green.
+    """)

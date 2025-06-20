@@ -6,3 +6,5 @@ seaborn
 matplotlib
 pydeck
 geopandas
+
+rift zones data: https://github.com/fraxen/tectonicplates/
